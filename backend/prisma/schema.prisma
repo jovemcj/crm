@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deals    Deal[]
+  messages Message[]
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?  @unique
+  email     String?
+  instagram String?
+  company   String?
+  avatar    String?
+  tags      String[]
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deals    Deal[]
+  messages Message[]
+  chats    Chat[]
+}
+
+model Pipeline {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int      @default(0)
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
+
+  stages Stage[]
+}
+
+model Stage {
+  id         String   @id @default(cuid())
+  name       String
+  order      Int      @default(0)
+  color      String   @default("#94a3b8")
+  pipelineId String
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  deals Deal[]
+}
+
+model Deal {
+  id          String    @id @default(cuid())
+  title       String
+  value       Float     @default(0)
+  probability Int       @default(0)
+  notes       String?
+  closedAt    DateTime?
+  stageId     String
+  stage       Stage     @relation(fields: [stageId], references: [id])
+  contactId   String
+  contact     Contact   @relation(fields: [contactId], references: [id])
+  ownerId     String?
+  owner       User?     @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Chat {
+  id        String      @id @default(cuid())
+  channel   Channel
+  remoteId  String
+  contactId String?
+  contact   Contact?    @relation(fields: [contactId], references: [id])
+  unread    Int         @default(0)
+  lastMsgAt DateTime?
+  createdAt DateTime    @default(now())
+
+  messages Message[]
+
+  @@unique([channel, remoteId])
+}
+
+model Message {
+  id          String      @id @default(cuid())
+  chatId      String
+  chat        Chat        @relation(fields: [chatId], references: [id])
+  contactId   String?
+  contact     Contact?    @relation(fields: [contactId], references: [id])
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+  channel     Channel
+  direction   Direction
+  type        MessageType @default(TEXT)
+  body        String
+  mediaUrl    String?
+  remotemsgId String?
+  status      MsgStatus   @default(SENT)
+  sentAt      DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+}
+
+model Integration {
+  id        String          @id @default(cuid())
+  channel   Channel         @unique
+  status    IntegrationStatus @default(DISCONNECTED)
+  sessionData Json?
+  phone     String?
+  username  String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+enum Channel {
+  WHATSAPP
+  INSTAGRAM
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  VIDEO
+  DOCUMENT
+  STICKER
+}
+
+enum MsgStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum IntegrationStatus {
+  DISCONNECTED
+  CONNECTING
+  CONNECTED
+}
