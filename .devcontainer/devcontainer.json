@@ -1,0 +1,28 @@
+{
+  "name": "CRM",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+
+  "features": {
+    "ghcr.io/devcontainers/features/postgresql:1": {
+      "version": "16"
+    }
+  },
+
+  "forwardPorts": [3333, 5173],
+  "portsAttributes": {
+    "3333": {
+      "label": "Backend API",
+      "onAutoForward": "silent"
+    },
+    "5173": {
+      "label": "Frontend CRM",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "remoteEnv": {
+    "DATABASE_URL": "postgresql://crm:crm123@localhost:5432/crm"
+  }
+}
