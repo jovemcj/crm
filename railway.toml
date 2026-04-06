@@ -1,0 +1,11 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm install --workspace=backend && npm install --workspace=frontend && npm run build"
+
+[deploy]
+startCommand = "node backend/src/index.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "crm"

@@ -1,8 +1,12 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
+import staticFiles from '@fastify/static'
 import { createServer } from 'http'
 import { Server as SocketIO } from 'socket.io'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+import { existsSync } from 'fs'
 import { prisma } from './db/client.js'
 
 import contactsRoutes from './routes/contacts.js'
@@ -15,7 +19,14 @@ import { setupSocketIO } from './socket.js'
 import { initWhatsApp } from './services/whatsapp.js'
 import { initInstagram } from './services/instagram.js'
 
-const app = Fastify({ logger: { transport: { target: 'pino-pretty' } } })
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const isProd = process.env.NODE_ENV === 'production'
+
+const app = Fastify({
+  logger: isProd
+    ? true
+    : { transport: { target: 'pino-pretty' } },
+})
 
 await app.register(cors, {
   origin: true,
@@ -43,6 +54,19 @@ app.register(messagesRoutes, { prefix: '/api/messages' })
 app.register(integrationsRoutes, { prefix: '/api/integrations' })
 
 app.get('/api/health', async () => ({ status: 'ok' }))
+
+// Serve frontend build in production
+const frontendDist = join(__dirname, '../../frontend/dist')
+if (isProd && existsSync(frontendDist)) {
+  await app.register(staticFiles, { root: frontendDist, prefix: '/' })
+  // SPA fallback — todas as rotas não-API retornam o index.html
+  app.setNotFoundHandler((req, reply) => {
+    if (!req.url.startsWith('/api') && !req.url.startsWith('/socket.io')) {
+      return reply.sendFile('index.html')
+    }
+    reply.status(404).send({ error: 'Not found' })
+  })
+}
 
 const httpServer = createServer(app.server ? undefined : app.callback?.() ?? undefined)
 

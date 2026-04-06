@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = [
+  "npm install --workspace=backend",
+  "npm install --workspace=frontend"
+]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "cd backend && npx prisma migrate deploy && cd .. && NODE_ENV=production node backend/src/index.js"
